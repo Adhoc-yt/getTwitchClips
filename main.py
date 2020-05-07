@@ -41,7 +41,11 @@ def get_broadcaster_id(pstreamer_name):
         sys.exit(1)
 
     twitch_response = json.loads(twitch_response.text)
-    return twitch_response["data"][0]["id"]
+
+    if twitch_response["data"]:
+        return twitch_response["data"][0]["id"]
+    else:
+        return None
 
 
 def get_clips(pstreamer_id):
@@ -99,7 +103,13 @@ def send_form(pentry_var):
                                      message="Veuillez entrer un nom de streamer")
         return
 
-    results = get_clips(get_broadcaster_id(streamer_name))
+    id_streamer = get_broadcaster_id(streamer_name)
+    if not id_streamer:
+        tkinter.messagebox.showerror(title="Erreur",
+                                     message="Ce streamer n'existe pas")
+        return
+
+    results = get_clips(id_streamer)
     display_results(results, streamer_name)
 
 
