@@ -3,6 +3,9 @@
 # Parsing JSON
 # Affichage et tri
 # Exit status 1: Error API Twitch
+# Exit status 2: auth.json does not exist
+# TODO Appuyer sur Entree valide le nom du streamer (comme bouton OK)
+# TODO Faire en sorte que le focus clavier soit dans le champ texte a l'ouverture
 
 
 import requests
@@ -11,14 +14,21 @@ import time
 import sys
 import tkinter
 import tkinter.messagebox
+import os.path
 
-CLIENT_ID = "mn75d76tgsck5famr0lw8zegpbd4wx"
+OAUTH_TOKEN = ""
+
+
+# TODO cette fonction juste pour DEBUG
+def print_json(x):
+    print(json.dumps(json.loads(x.text), indent=4))
 
 
 def get_broadcaster_id(pstreamer_name):
     twitch_response = requests.get("https://api.twitch.tv/helix/users",
                                    headers={"Accept": "application/vnd.twitchtv.v5+json",
-                                            "Client-ID": CLIENT_ID},
+                                            "Client-ID": CLIENT_ID,
+                                            "Authorization": "Bearer {}".format(OAUTH_TOKEN)},
                                    params={"login": pstreamer_name}
                                    )
 
@@ -42,7 +52,8 @@ def get_clips(pstreamer_id):
     while True:
         twitch_response = requests.get("https://api.twitch.tv/helix/clips",
                                        headers={"Accept": "application/vnd.twitchtv.v5+json",
-                                                "Client-ID": CLIENT_ID},
+                                                "Client-ID": CLIENT_ID,
+                                                "Authorization": "Bearer {}".format(OAUTH_TOKEN)},
                                        params={"broadcaster_id": pstreamer_id,
                                                "first": first_value,
                                                "after": pagination_cursor}
@@ -68,6 +79,19 @@ def get_clips(pstreamer_id):
     return data
 
 
+def display_results(presults, pstreamer_name):
+    res_window = tkinter.Tk()
+    res_window.title("Liste des clips pour {}".format(pstreamer_name))
+    res_window.geometry("700x400")
+
+    clip_list_var = tkinter.Text(res_window)
+    clip_list_var.insert(tkinter.INSERT, "Total clips:{}\n".format(len(presults)))
+    clip_list_var.insert(tkinter.INSERT, json.dumps(presults, indent=4))
+    clip_list_var.pack()
+
+    res_window.mainloop()
+
+
 def send_form(pentry_var):
     streamer_name = pentry_var.get()
     if not streamer_name:
@@ -77,15 +101,6 @@ def send_form(pentry_var):
 
     results = get_clips(get_broadcaster_id(streamer_name))
     display_results(results, streamer_name)
-
-
-def display_results(presults, pstreamer_name):
-    res_window = tkinter.Tk()
-    res_window.title("Liste des clips pour {}".format(pstreamer_name))
-    res_window.geometry("600x1000")
-
-    text_var = tkinter.text(res_window,
-                            text=presults)
 
 
 def get_streamer_name_window():
@@ -121,4 +136,34 @@ def get_streamer_name_window():
 
 
 if __name__ == "__main__":
+    # Oauth part - TODO MOVE TO ANOTHER FILE
+    # si oui, assigner en memoire client id et client secret et get oauth token
+
+    if os.path.isfile('auth.json'):
+        with open('auth.json') as json_file:
+            auth_data = json.load(json_file)
+            CLIENT_ID = auth_data["client_id"]
+            client_secret = auth_data["client_secret"]
+            #TODO check client id and secret defined
+    else:
+        tkinter.messagebox.showerror(title="Erreur",
+                                     message="Pas de fichier auth.json, PAS DE CHOCOLAT")
+        sys.exit(2)
+
+    oauth_response = requests.post("https://id.twitch.tv/oauth2/token",
+                                   params={"client_id": CLIENT_ID,
+                                           "client_secret": client_secret,
+                                           "grant_type": "client_credentials"}
+                                   )
+    OAUTH_TOKEN = json.loads(oauth_response.text)["access_token"]
+    # TODO store token in cookie? Invalidate end session? #SEC_RISK
+    # TODO check token is validated else exit 3
+    # validate_token = requests.get("https://id.twitch.tv/oauth2/validate",
+    #                               headers={"Authorization": "OAuth {}".format(oauth_token)}
+    #                               )
+
+    # sinon, TODO generer auth.json #PRIORITE
+
+    # END Oauth part
+
     get_streamer_name_window()
