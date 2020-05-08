@@ -4,6 +4,7 @@
 # Affichage et tri
 # Exit status 1: Error API Twitch
 # Exit status 2: auth.json does not exist
+# Exit status 2: auth.json exists but is full of crap
 # TODO Appuyer sur Entree valide le nom du streamer (comme bouton OK)
 # TODO Faire en sorte que le focus clavier soit dans le champ texte a l'ouverture
 
@@ -15,8 +16,10 @@ import sys
 import tkinter
 import tkinter.messagebox
 import os.path
+import webbrowser
 
 OAUTH_TOKEN = ""
+CLIENT_ID = ""
 
 
 # TODO cette fonction juste pour DEBUG
@@ -96,7 +99,7 @@ def display_results(presults, pstreamer_name):
     res_window.mainloop()
 
 
-def send_form(pentry_var):
+def send_streamer_name(pentry_var):
     streamer_name = pentry_var.get()
     if not streamer_name:
         tkinter.messagebox.showerror(title="Erreur",
@@ -135,29 +138,88 @@ def get_streamer_name_window():
 
     btn_var = tkinter.Button(streamer_name_window,
                              text="OK",
-                             command=lambda: send_form(entry_var),
+                             command=lambda: send_streamer_name(entry_var),
                              padx=10,
                              pady=5)
     btn_var.grid(row=1,
                  column=1,
                  pady=(20, 0))
 
+    entry_var.bind('<Return>', lambda event: send_streamer_name(entry_var))
+    streamer_name_window.bind('<Escape>', lambda event: streamer_name_window.quit())
     streamer_name_window.mainloop()
 
 
-if __name__ == "__main__":
-    # Oauth part - TODO MOVE TO ANOTHER FILE
-    # si oui, assigner en memoire client id et client secret et get oauth token
+def send_auth_data(auth_window, pclient_id, pclient_secret):
+    if not (pclient_id and pclient_secret):
+        return
 
-    if os.path.isfile('auth.json'):
+    auth_json_data = {"client_id": pclient_id,
+                      "client_secret": pclient_secret}
+    with open('auth.json', 'w') as outfile:
+        json.dump(auth_json_data, outfile)
+
+    auth_window.quit()
+
+
+def open_url(purl):
+    webbrowser.open_new(purl)
+
+
+def get_auth_window():
+    auth_window = tkinter.Tk()
+    auth_window.title("Vous devez enregistrer l'application")
+    auth_window.geometry("500x200")
+
+    label_var = tkinter.Label(auth_window,
+                              text="Cliquez ici pour enregistrer votre application\n"
+                                   "(obligatoire pour utiliser l'API Twitch)\n"
+                                   "Mettez http://localhost pour OAuth Redirect URL",
+                              fg="blue",
+                              cursor="hand2"
+                              )
+    label_var.pack()
+    label_var.bind("<Button-1>", lambda e: open_url("https://dev.twitch.tv/console/apps/"))
+
+    entry_client_id_var = tkinter.Entry(auth_window,
+                                        bd=3,
+                                        width=50)
+    entry_client_id_var.pack()
+
+    # TODO cacher les caracteres comme un champ mot de passe
+    entry_client_secret_var = tkinter.Entry(auth_window,
+                                            bd=3,
+                                            width=50)
+    entry_client_secret_var.pack()
+
+    btn_var = tkinter.Button(auth_window,
+                             text="OK",
+                             command=lambda: send_auth_data(auth_window,
+                                                            entry_client_id_var.get(),
+                                                            entry_client_secret_var.get()),
+                             padx=10,
+                             pady=5)
+    btn_var.pack()
+
+    auth_window.mainloop()
+
+
+def get_oauth_token():
+    # Oauth part - TODO MOVE TO ANOTHER FILE
+    global CLIENT_ID, OAUTH_TOKEN
+
+    if not os.path.isfile('auth.json'):
+        get_auth_window()
+
+    try:
         with open('auth.json') as json_file:
             auth_data = json.load(json_file)
             CLIENT_ID = auth_data["client_id"]
             client_secret = auth_data["client_secret"]
-            #TODO check client id and secret defined
-    else:
-        tkinter.messagebox.showerror(title="Erreur",
-                                     message="Pas de fichier auth.json, PAS DE CHOCOLAT")
+            if not (CLIENT_ID and client_secret):
+                print("malformed JSON auth file")
+                sys.exit(3)
+    except IOError:
         sys.exit(2)
 
     oauth_response = requests.post("https://id.twitch.tv/oauth2/token",
@@ -166,14 +228,15 @@ if __name__ == "__main__":
                                            "grant_type": "client_credentials"}
                                    )
     OAUTH_TOKEN = json.loads(oauth_response.text)["access_token"]
-    # TODO store token in cookie? Invalidate end session? #SEC_RISK
-    # TODO check token is validated else exit 3
-    # validate_token = requests.get("https://id.twitch.tv/oauth2/validate",
-    #                               headers={"Authorization": "OAuth {}".format(oauth_token)}
-    #                               )
 
-    # sinon, TODO generer auth.json #PRIORITE
 
-    # END Oauth part
-
+if __name__ == "__main__":
+    get_oauth_token()
     get_streamer_name_window()
+
+# Creer fenetre qui contient le lien, textfield clientid, un textfield clientsecret, generer JSON, et retenter
+# TODO Invalidate end session! #SEC_RISK
+# TODO check token is valid else exit 3
+# validate_token = requests.get("https://id.twitch.tv/oauth2/validate",
+#                               headers={"Authorization": "OAuth {}".format(oauth_token)}
+#                               )
