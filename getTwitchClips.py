@@ -1,7 +1,12 @@
 # TODO bug if using '\' in streamer_name
 # TODO bug si double clic sur en-tete (unbind categories)
 # TODO Change cursor on hover links
-# TODO Lazy loading for thumbnails
+# TODO !!!!! Lazy loading for thumbnails
+# TODO zoom thumbnail on hover
+# TODO !!! barre de recherche
+# TODO resize columns
+# TODO Clip Downloader ?
+
 # Exit status 1: Error API Twitch
 # Exit status 2: auth.json does not exist
 # Exit status 3: auth.json exists but is full of crap
