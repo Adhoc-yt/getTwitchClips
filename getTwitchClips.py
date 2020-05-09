@@ -1,11 +1,7 @@
-# Ouvrir fenetre avec textfield + bouton "get Clips"
-# Connexion curl API Twitch
-# Parsing JSON
-# Affichage et tri
+# TODO Affichage et tri
 # Exit status 1: Error API Twitch
 # Exit status 2: auth.json does not exist
-# Exit status 2: auth.json exists but is full of crap
-# TODO Faire en sorte que le focus clavier soit dans le champ texte a l'ouverture
+# Exit status 3: auth.json exists but is full of crap
 
 
 import requests
@@ -133,6 +129,7 @@ def get_streamer_name_window():
                               bd=3,
                               width=20)
     entry_var.pack()
+    entry_var.focus_set()
 
     btn_var = tkinter.Button(streamer_name_window,
                              command=lambda: send_streamer_name(streamer_name_window,
@@ -206,7 +203,6 @@ def get_auth_window():
 
 
 def get_oauth_token():
-    # Oauth part - TODO MOVE TO ANOTHER FILE
     global CLIENT_ID, OAUTH_TOKEN
 
     if not os.path.isfile('auth.json'):
@@ -218,7 +214,8 @@ def get_oauth_token():
             CLIENT_ID = auth_data["client_id"]
             client_secret = auth_data["client_secret"]
             if not (CLIENT_ID and client_secret):
-                print("malformed JSON auth file")
+                tkinter.messagebox.showerror(title="Erreur",
+                                             message="Fichier auth.json invalide")
                 sys.exit(3)
     except IOError:
         sys.exit(2)
@@ -231,13 +228,14 @@ def get_oauth_token():
     OAUTH_TOKEN = json.loads(oauth_response.text)["access_token"]
 
 
+def invalidate_oauth_token():
+    requests.post("https://id.twitch.tv/oauth2/revoke",
+                  params={"client_id": CLIENT_ID,
+                          "token": OAUTH_TOKEN}
+                  )
+
+
 if __name__ == "__main__":
     get_oauth_token()
     get_streamer_name_window()
-
-# Creer fenetre qui contient le lien, textfield clientid, un textfield clientsecret, generer JSON, et retenter
-# TODO Invalidate end session! #SEC_RISK
-# TODO check token is valid else exit 3
-# validate_token = requests.get("https://id.twitch.tv/oauth2/validate",
-#                               headers={"Authorization": "OAuth {}".format(oauth_token)}
-#                               )
+    invalidate_oauth_token()
