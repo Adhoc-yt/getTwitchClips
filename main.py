@@ -187,7 +187,6 @@ def get_auth_window():
                                         width=50)
     entry_client_id_var.pack()
 
-    # TODO cacher les caracteres comme un champ mot de passe
     entry_client_secret_var = tkinter.Entry(auth_window,
                                             bd=3,
                                             width=50,
