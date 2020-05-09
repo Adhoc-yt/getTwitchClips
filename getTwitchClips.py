@@ -1,5 +1,7 @@
 # TODO bug if using '\' in streamer_name
 # TODO bug si double clic sur en-tete (unbind categories)
+# TODO Change cursor on hover links
+# TODO Lazy loading for thumbnails
 # Exit status 1: Error API Twitch
 # Exit status 2: auth.json does not exist
 # Exit status 3: auth.json exists but is full of crap
@@ -111,7 +113,7 @@ def sortby(tree, pcol, descending):
 def generate_thumbnail(p_thumbnail_url):
     response = requests.get(p_thumbnail_url)
     image = Image.open(BytesIO(response.content))
-    image = image.resize((40, 71))
+    image = image.resize((142, 80))
     return image
 
 
@@ -143,7 +145,7 @@ def open_clip(event):
     item_id = event.widget.focus()
     item = event.widget.item(item_id)
     values = item['values']
-    open_url(values[6])
+    open_url(values[5])
 
 
 def display_results(presults, pstreamer_name):
@@ -165,12 +167,11 @@ def display_results(presults, pstreamer_name):
 
     style = tkinter.ttk.Style(res_window)
     style.configure('Treeview',
-                    rowheight=40)
+                    rowheight=90)
     style.map('Treeview',
               foreground=fixed_map('foreground'),
               background=fixed_map('background'))
-    tree_columns = ("thumbnail_url",
-                    "title",
+    tree_columns = ("title",
                     "created_at",
                     "creator_name",
                     "view_count",
@@ -178,45 +179,40 @@ def display_results(presults, pstreamer_name):
                     "url")
     tree_var = tkinter.ttk.Treeview(res_window,
                                     columns=tree_columns,
-                                    show="headings")
+                                    selectmode="extended")
+    tree_var.heading("#0", text="", anchor='center')
 
     # Building tree
     for col in tree_columns:
         tree_var.heading(col,
                          text=col.title(),
                          command=lambda c=col: sortby(tree_var, c, 0))
-        if col == "thumbnail_url":
-            tree_var.column("thumbnail_url",
-                            width=71,
-                            stretch=False)
-        else:
-            tree_var.column(col,
-                            width=tkinter.font.Font().measure(col.title()))
+        tree_var.column(col,
+                        width=tkinter.font.Font().measure(col.title()))
 
     odd_row = False
     games = {}
+    thumbnails = []
+
     for clip in presults:
         # Adapting dictionnary format to list of values
         item = [clip[h] for h in tree_columns]
 
         # Check we only have safe characters for Titles
-        item[1] = ''.join(filter(lambda x: ord(x) < 65535, item[1]))
+        item[0] = ''.join(filter(lambda x: ord(x) < 65535, item[0]))
 
         # Resolve game_id in game_name and replace id by name
-        if item[5] not in games:
-            game_name = resolve_game(item[5])
-            games[item[5]] = game_name
-        item[5] = games[item[5]]
+        if item[4] not in games:
+            game_name = resolve_game(item[4])
+            games[item[4]] = game_name
+        item[4] = games[item[4]]
 
-        # width=71,
-        #                               height=40,
-        # generate_thumbnail(item[0]),
-        # item[0] = ''
-        # image=ImageTk.PhotoImage(generate_thumbnail(item[0])),
+        # Grab Thumbnail
+        thumbnails.append(ImageTk.PhotoImage(generate_thumbnail(clip["thumbnail_url"])))
 
         tree_var.insert('',
                         'end',
-
+                        image=thumbnails[-1],
                         values=item,
                         tags=("oddrow" if odd_row else "evenrow",))
         odd_row = not odd_row
