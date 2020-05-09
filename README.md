@@ -1,7 +1,7 @@
 # getTwitchClips 
 ### A tool to get Twitch clips for a given user, and sort by name, date, views.
 
-Live coding sessions in French on https://twitch.tv/adhoc_yt
+Live coding sessions in French on https://twitch.tv/adhoc_yt 
 
 ---
 

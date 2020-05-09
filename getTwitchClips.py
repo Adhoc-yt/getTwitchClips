@@ -1,7 +1,7 @@
 # TODO bug if using '\' in streamer_name
 # TODO bug si double clic sur en-tete (unbind categories)
 # TODO Change cursor on hover links
-# TODO !!!!! Lazy loading for thumbnails
+# TODO !!!! Lazy loading for thumbnails
 # TODO zoom thumbnail on hover
 # TODO !!! barre de recherche
 # TODO resize columns
