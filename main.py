@@ -5,7 +5,6 @@
 # Exit status 1: Error API Twitch
 # Exit status 2: auth.json does not exist
 # Exit status 2: auth.json exists but is full of crap
-# TODO Appuyer sur Entree valide le nom du streamer (comme bouton OK)
 # TODO Faire en sorte que le focus clavier soit dans le champ texte a l'ouverture
 
 
@@ -22,7 +21,6 @@ OAUTH_TOKEN = ""
 CLIENT_ID = ""
 
 
-# TODO cette fonction juste pour DEBUG
 def print_json(x):
     print(json.dumps(json.loads(x.text), indent=4))
 
@@ -52,7 +50,6 @@ def get_broadcaster_id(pstreamer_name):
 
 
 def get_clips(pstreamer_id):
-    data = []
     pagination_cursor = ""
     first_value = 20
 
@@ -76,14 +73,12 @@ def get_clips(pstreamer_id):
 
         twitch_response = json.loads(twitch_response.text)
         if "data" in twitch_response:
-            data.extend(twitch_response["data"])
+            yield twitch_response["data"]
 
         if "pagination" in twitch_response and "cursor" in twitch_response["pagination"]:
             pagination_cursor = twitch_response["pagination"]["cursor"]
         else:
             break
-
-    return data
 
 
 def display_results(presults, pstreamer_name):
@@ -99,7 +94,7 @@ def display_results(presults, pstreamer_name):
     res_window.mainloop()
 
 
-def send_streamer_name(pentry_var):
+def send_streamer_name(pstreamer_name_window, pbtn_var, pentry_var):
     streamer_name = pentry_var.get()
     if not streamer_name:
         tkinter.messagebox.showerror(title="Erreur",
@@ -112,7 +107,15 @@ def send_streamer_name(pentry_var):
                                      message="Ce streamer n'existe pas")
         return
 
-    results = get_clips(id_streamer)
+    pbtn_var["state"] = "disabled"
+    results = []
+    for clips in get_clips(id_streamer):
+        results.extend(clips)
+        pbtn_var["text"] = "Clips: {}".format(len(results))
+        pstreamer_name_window.update()
+
+    pbtn_var["state"] = "normal"
+    pbtn_var["text"] = "OK"
     display_results(results, streamer_name)
 
 
@@ -124,28 +127,26 @@ def get_streamer_name_window():
     label_var = tkinter.Label(streamer_name_window,
                               text="Nom du streamer :"
                               )
-    label_var.grid(row=0,
-                   column=0,
-                   padx=(20, 0),
-                   pady=(80, 0))
+    label_var.pack()
 
     entry_var = tkinter.Entry(streamer_name_window,
                               bd=3,
                               width=20)
-    entry_var.grid(row=0,
-                   column=1,
-                   pady=(80, 0))
+    entry_var.pack()
 
     btn_var = tkinter.Button(streamer_name_window,
+                             command=lambda: send_streamer_name(streamer_name_window,
+                                                                btn_var,
+                                                                entry_var),
                              text="OK",
-                             command=lambda: send_streamer_name(entry_var),
                              padx=10,
                              pady=5)
-    btn_var.grid(row=1,
-                 column=1,
-                 pady=(20, 0))
 
-    entry_var.bind('<Return>', lambda event: send_streamer_name(entry_var))
+    btn_var.pack()
+
+    entry_var.bind('<Return>', lambda event: send_streamer_name(streamer_name_window,
+                                                                btn_var,
+                                                                entry_var))
     streamer_name_window.bind('<Escape>', lambda event: streamer_name_window.quit())
     streamer_name_window.mainloop()
 
@@ -189,7 +190,8 @@ def get_auth_window():
     # TODO cacher les caracteres comme un champ mot de passe
     entry_client_secret_var = tkinter.Entry(auth_window,
                                             bd=3,
-                                            width=50)
+                                            width=50,
+                                            show='*')
     entry_client_secret_var.pack()
 
     btn_var = tkinter.Button(auth_window,
