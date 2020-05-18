@@ -52,7 +52,7 @@ def get_broadcaster_id(pstreamer_name):
 
     twitch_response = json.loads(twitch_response.text)
 
-    if twitch_response["data"]:
+    if "data" in twitch_response and twitch_response["data"]:
         return twitch_response["data"][0]["id"]
     else:
         return None
@@ -115,6 +115,10 @@ def sortby(tree, pcol, descending):
                                                  int(not descending)))
 
 
+def generate_thumbnail_placeholder():
+    return Image.new("RGB", (142, 80), "grey")
+
+
 def generate_thumbnail(p_thumbnail_url):
     response = requests.get(p_thumbnail_url)
     image = Image.open(BytesIO(response.content))
@@ -155,7 +159,7 @@ def open_clip(event):
 
 def display_results(presults, pstreamer_name):
     res_window = tkinter.Toplevel()
-    res_window.title("Liste des clips pour {} - Total clips:{}".format(pstreamer_name, len(presults)))
+    res_window.title("Liste des clips pour {} - Total clips : {}".format(pstreamer_name, len(presults)))
     res_window.geometry("1300x600")
 
     # Frame
@@ -213,7 +217,8 @@ def display_results(presults, pstreamer_name):
         item[4] = games[item[4]]
 
         # Grab Thumbnail
-        thumbnails.append(ImageTk.PhotoImage(generate_thumbnail(clip["thumbnail_url"])))
+        # thumbnails.append(ImageTk.PhotoImage(generate_thumbnail(clip["thumbnail_url"])))
+        thumbnails.append(ImageTk.PhotoImage(generate_thumbnail_placeholder()))
 
         tree_var.insert('',
                         'end',
