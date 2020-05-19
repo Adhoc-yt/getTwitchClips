@@ -15,6 +15,9 @@ Téléchargez et exécutez [getTwitchClips.exe](getTwitchClips.exe)
 
 ##Utilisation
 
+Lors de la première exécution, on vous demandera d'autoriser l'application
+à générer un cookie - obligatoire pour utiliser l'API de Twitch.
+
 Lancez l'exécutable :
 
 ![alt text](doc/2.png)
@@ -34,4 +37,4 @@ Vous pouvez lancer la recherche sur un autre streamer lorsqu'une collection
 
 ##Upcoming features
 
-Une barre de recherche et un panneau de login non-developpeur
+Une barre de recherche

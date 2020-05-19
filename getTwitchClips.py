@@ -1,10 +1,10 @@
-# TODO Deliverable
+# TODO User login + token refresh
 # TODO Tuto initialistion
 # TODO !!! barre de recherche
 
 # Exit status 1: Error API Twitch
-# Exit status 2: auth.json does not exist
-# Exit status 3: auth.json exists but is full of crap
+# Exit status 2: cookie.json does not exist
+# Exit status 3: cookie.json exists but is full of crap
 
 
 import requests
@@ -24,13 +24,13 @@ import threading
 import PIL
 import PIL.Image
 import PIL.ImageTk
+import http.server
+import socketserver
+import urllib
+import urllib.parse
 
+CLIENT_ID = "zi5wpvvulslf5pb2nhq4qk6stlsht3"
 OAUTH_TOKEN = ""
-CLIENT_ID = ""
-
-
-def print_json(x):
-    print(json.dumps(json.loads(x.text), indent=4))
 
 
 def get_broadcaster_id(pstreamer_name):
@@ -376,94 +376,74 @@ def get_streamer_name_window():
     streamer_name_window.mainloop()
 
 
-def send_auth_data(auth_window, pclient_id, pclient_secret):
-    if not (pclient_id and pclient_secret):
+def write_cookie():
+    if not OAUTH_TOKEN:
         return
 
-    auth_json_data = {"client_id": pclient_id,
-                      "client_secret": pclient_secret}
-    with open('auth.json', 'w') as outfile:
+    auth_json_data = {"access_token": OAUTH_TOKEN}
+    with open('cookie.json', 'w') as outfile:
         json.dump(auth_json_data, outfile)
-
-    auth_window.quit()
 
 
 def open_url(purl):
     webbrowser.open_new(purl)
 
 
-def get_auth_window():
-    auth_window = tkinter.Tk()
-    auth_window.title("Vous devez enregistrer l'application")
-    auth_window.geometry("500x200")
+# noinspection PyPep8Naming
+class TwitchHandler(http.server.BaseHTTPRequestHandler):
+    def _set_response(self):
+        self.send_response(200, "OK")
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
 
-    label_var = tkinter.Label(auth_window,
-                              text="Cliquez ici pour enregistrer votre application\n"
-                                   "(obligatoire pour utiliser l'API Twitch)\n"
-                                   "Mettez http://localhost pour OAuth Redirect URL",
-                              fg="blue",
-                              cursor="hand2"
-                              )
-    label_var.pack()
-    label_var.bind("<Button-1>", lambda e: open_url("https://dev.twitch.tv/console/apps/"))
-
-    entry_client_id_var = tkinter.Entry(auth_window,
-                                        bd=3,
-                                        width=50)
-    entry_client_id_var.pack()
-
-    entry_client_secret_var = tkinter.Entry(auth_window,
-                                            bd=3,
-                                            width=50,
-                                            show='*')
-    entry_client_secret_var.pack()
-
-    btn_var = tkinter.Button(auth_window,
-                             text="OK",
-                             command=lambda: send_auth_data(auth_window,
-                                                            entry_client_id_var.get(),
-                                                            entry_client_secret_var.get()),
-                             padx=10,
-                             pady=5)
-    btn_var.pack()
-
-    auth_window.mainloop()
+    def do_GET(self):
+        global OAUTH_TOKEN
+        self._set_response()
+        js = 'document.location.hash?window.location.replace("http://localhost:23451/"+document.location.hash.replace("#","?")):window.close();'
+        self.wfile.write("<script>{}</script>".format(js).encode('utf-8'))
+        try:
+            OAUTH_TOKEN = urllib.parse.parse_qs(self.path[2:])["access_token"][0]
+        except KeyError:
+            print("Loading token next redirect")
 
 
 def get_oauth_token():
-    global CLIENT_ID, OAUTH_TOKEN
+    global OAUTH_TOKEN
 
-    if not os.path.isfile('auth.json'):
-        get_auth_window()
+    if not os.path.isfile('cookie.json'):
+        handler = TwitchHandler
+        with socketserver.TCPServer(("localhost", 23451), handler) as httpd:
+            local_port = httpd.socket.getsockname()[1]
+            print("Waiting for token on port {}".format(local_port))
+            open_url(
+                "https://id.twitch.tv/oauth2/authorize?client_id={}&redirect_uri=http://localhost:{}&response_type=token".format(
+                    CLIENT_ID, 23451))
+
+            httpd.handle_request()
+            httpd.handle_request()
+
+            # get code to token
+            write_cookie()
 
     try:
-        with open('auth.json') as json_file:
+        with open('cookie.json') as json_file:
             auth_data = json.load(json_file)
-            CLIENT_ID = auth_data["client_id"]
-            client_secret = auth_data["client_secret"]
-            if not (CLIENT_ID and client_secret):
+            OAUTH_TOKEN = auth_data["access_token"]
+            if not (CLIENT_ID and OAUTH_TOKEN):
                 tkinter.messagebox.showerror(title="Erreur",
-                                             message="Fichier auth.json invalide")
+                                             message="cookie.json invalide")
                 sys.exit(3)
     except IOError:
         sys.exit(2)
 
-    oauth_response = requests.post("https://id.twitch.tv/oauth2/token",
-                                   params={"client_id": CLIENT_ID,
-                                           "client_secret": client_secret,
-                                           "grant_type": "client_credentials"}
-                                   )
-    OAUTH_TOKEN = json.loads(oauth_response.text)["access_token"]
-
-
-def invalidate_oauth_token():
-    requests.post("https://id.twitch.tv/oauth2/revoke",
-                  params={"client_id": CLIENT_ID,
-                          "token": OAUTH_TOKEN}
-                  )
+    # oauth_response = requests.post("https://id.twitch.tv/oauth2/token",
+    #                                params={"client_id": CLIENT_ID,
+    #                                        "client_secret": client_secret,
+    #                                        "grant_type": "client_credentials"}
+    #                                )
+    # OAUTH_TOKEN = json.loads(oauth_response.text)["access_token"]
 
 
 if __name__ == "__main__":
     get_oauth_token()
     get_streamer_name_window()
-    invalidate_oauth_token()
