@@ -1,7 +1,7 @@
 # TODO bug if using '\' in streamer_name
+# TODO unbind touche entree
 # TODO bug si double clic sur en-tete (unbind categories)
 # TODO Change cursor on hover links
-# TODO !!!! Lazy loading for thumbnails
 # TODO zoom thumbnail on hover
 # TODO !!! barre de recherche
 # TODO resize columns
@@ -120,9 +120,16 @@ def generate_thumbnail_placeholder(pcolor):
     return ImageTk.PhotoImage(Image.new("RGB", (142, 80), pcolor))
 
 
-def download_thumbnails(presults):
+def update_image(ptree, new_image):
+    children = ptree.get_children()
+    # for child in children:
+    #     ptree.item(item, text="blub", values=("foo", "bar"))
+
+
+def download_thumbnails(ptree, presults):
     for clip in presults:
         clip["thumbnail"] = generate_thumbnail(clip["thumbnail_url"])
+        ptree.item(clip["url"], image=clip["thumbnail"])
 
 
 def generate_thumbnail(p_thumbnail_url):
@@ -210,6 +217,7 @@ def build_tree(ptree, pcolums, pcontent):
 
         ptree.insert('',
                      'end',
+                     iid=clip["url"],
                      image=clip["thumbnail"],
                      values=item,
                      tags=("oddrow" if odd_row else "evenrow",))
@@ -265,9 +273,6 @@ def display_results(presults, pstreamer_name):
     res_window.title("Liste des clips pour {} - Total clips : {}".format(pstreamer_name, len(presults)))
     res_window.geometry("1300x600")
 
-    t = threading.Thread(target=download_thumbnails, args=(presults,))
-    t.start()
-
     # Frame
     tree_frame = tkinter.ttk.Frame(res_window)
     tree_frame.pack(fill='both',
@@ -282,6 +287,10 @@ def display_results(presults, pstreamer_name):
 
     tree_var = init_tree(res_window, tree_columns)
     build_tree(tree_var, tree_columns, presults)
+
+    t = threading.Thread(target=download_thumbnails, args=(tree_var,
+                                                           presults))
+    t.start()
 
     # async load thumbnails
     # pthumbnails.append(generate_thumbnail(clip["thumbnail_url"]))
