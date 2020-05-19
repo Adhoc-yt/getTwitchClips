@@ -8,12 +8,12 @@ d'un streamer, puis de trier par titre, par date, par nombre de vues,
 _[> Rediffusions de live coding](https://twitch.tv/adhoc_yt)_
 
 
-##Installation
+## Installation
 
 
 Téléchargez et exécutez [getTwitchClips.exe](getTwitchClips.exe)
 
-##Utilisation
+## Utilisation
 
 Lors de la première exécution, on vous demandera d'autoriser l'application
 à générer un cookie - obligatoire pour utiliser l'API de Twitch.
@@ -35,6 +35,6 @@ Pour trier les clips, cliquez sur le critère de tri en haut de chaque
 Vous pouvez lancer la recherche sur un autre streamer lorsqu'une collection
  de clips a fini de charger.
 
-##Upcoming features
+## Upcoming features
 
 Une barre de recherche
