@@ -17,10 +17,13 @@ import tkinter.ttk
 import tkinter.font
 import os.path
 import webbrowser
+import dateutil
 import dateutil.parser
-from io import BytesIO
-from PIL import Image, ImageTk
+import io
 import threading
+import PIL
+import PIL.Image
+import PIL.ImageTk
 
 OAUTH_TOKEN = ""
 CLIENT_ID = ""
@@ -112,7 +115,7 @@ def sortby(tree, pcol, descending):
 
 
 def generate_thumbnail_placeholder(pcolor):
-    return ImageTk.PhotoImage(Image.new("RGB", (142, 80), pcolor))
+    return PIL.ImageTk.PhotoImage(PIL.Image.new("RGB", (142, 80), pcolor))
 
 
 def download_thumbnails(ptree, presults):
@@ -123,9 +126,9 @@ def download_thumbnails(ptree, presults):
 
 def generate_thumbnail(p_thumbnail_url):
     response = requests.get(p_thumbnail_url)
-    image = Image.open(BytesIO(response.content))
+    image = PIL.Image.open(io.BytesIO(response.content))
     image = image.resize((142, 80))
-    return ImageTk.PhotoImage(image)
+    return PIL.ImageTk.PhotoImage(image)
 
 
 def resolve_game(pid_game):
@@ -212,7 +215,7 @@ def build_tree(ptree, pcolums, pcontent):
                      iid=clip["url"],
                      image=clip["thumbnail"],
                      values=item,
-                     tags=("oddrow" if odd_row else "evenrow","clickable"))
+                     tags=("oddrow" if odd_row else "evenrow", "clickable"))
         odd_row = not odd_row
 
         # Adjust columns lengths if necessary
