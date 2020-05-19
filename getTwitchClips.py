@@ -1,5 +1,3 @@
-# TODO bug if using '\' in streamer_name
-# TODO bug si double clic sur en-tete (unbind categories)
 # TODO Change cursor on hover links
 # TODO zoom thumbnail on hover
 # TODO !!! barre de recherche
@@ -105,7 +103,7 @@ def sortby(tree, pcol, descending):
     data.sort(reverse=descending)
     for indx, item in enumerate(data):
         tree.move(item[1], '', indx)
-        tree.item(item[1], tags=("oddrow" if odd_row else "evenrow",))
+        tree.item(item[1], tags=("oddrow" if odd_row else "evenrow", "clickable"))
         odd_row = not odd_row
 
     # switch the heading so that it will sort in the opposite direction
@@ -267,7 +265,9 @@ def tree_binds(ptree):
                         background="white",
                         foreground="black")
 
-    ptree.bind("<Double-1>", open_clip)
+    ptree.tag_bind("clickable",
+                   "<Double-1>",
+                   callback=open_clip)
 
 
 def display_results(presults, pstreamer_name):
