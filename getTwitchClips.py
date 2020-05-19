@@ -25,6 +25,7 @@ import webbrowser
 import dateutil.parser
 from io import BytesIO
 from PIL import Image, ImageTk
+import threading
 
 OAUTH_TOKEN = ""
 CLIENT_ID = ""
@@ -115,15 +116,20 @@ def sortby(tree, pcol, descending):
                                                  int(not descending)))
 
 
-def generate_thumbnail_placeholder():
-    return Image.new("RGB", (142, 80), "grey")
+def generate_thumbnail_placeholder(pcolor):
+    return ImageTk.PhotoImage(Image.new("RGB", (142, 80), pcolor))
+
+
+def download_thumbnails(presults):
+    for clip in presults:
+        clip["thumbnail"] = generate_thumbnail(clip["thumbnail_url"])
 
 
 def generate_thumbnail(p_thumbnail_url):
     response = requests.get(p_thumbnail_url)
     image = Image.open(BytesIO(response.content))
     image = image.resize((142, 80))
-    return image
+    return ImageTk.PhotoImage(image)
 
 
 def resolve_game(pid_game):
@@ -157,55 +163,41 @@ def open_clip(event):
     open_url(values[5])
 
 
-def display_results(presults, pstreamer_name):
-    res_window = tkinter.Toplevel()
-    res_window.title("Liste des clips pour {} - Total clips : {}".format(pstreamer_name, len(presults)))
-    res_window.geometry("1300x600")
-
-    # Frame
-    container = tkinter.ttk.Frame(res_window)
-    container.pack(fill='both',
-                   expand=True)
-
-    # Tree init
+def init_tree(parent_frame, pcolums):
     # Workaround for ttk color glitch: https://bugs.python.org/issue36468
     def fixed_map(option):
         # From: https://core.tcl.tk/tk/info/509cafafae
         return [elm for elm in style.map('Treeview', query_opt=option) if
                 elm[:2] != ('!disabled', '!selected')]
 
-    style = tkinter.ttk.Style(res_window)
+    style = tkinter.ttk.Style(parent_frame)
     style.configure('Treeview',
                     rowheight=90)
     style.map('Treeview',
               foreground=fixed_map('foreground'),
               background=fixed_map('background'))
-    tree_columns = ("title",
-                    "created_at",
-                    "creator_name",
-                    "view_count",
-                    "game_id",
-                    "url")
-    tree_var = tkinter.ttk.Treeview(res_window,
-                                    columns=tree_columns,
+
+    tree_var = tkinter.ttk.Treeview(parent_frame,
+                                    columns=pcolums,
                                     selectmode="extended")
     tree_var.heading("#0", text="", anchor='center')
+    return tree_var
 
-    # Building tree
-    for col in tree_columns:
-        tree_var.heading(col,
-                         text=col.title(),
-                         command=lambda c=col: sortby(tree_var, c, 0))
-        tree_var.column(col,
-                        width=tkinter.font.Font().measure(col.title()))
+
+def build_tree(ptree, pcolums, pcontent):
+    for col in pcolums:
+        ptree.heading(col,
+                      text=col.title(),
+                      command=lambda c=col: sortby(ptree, c, 0))
+        ptree.column(col,
+                     width=tkinter.font.Font().measure(col.title()))
 
     odd_row = False
     games = {}
-    thumbnails = []
 
-    for clip in presults:
+    for clip in pcontent:
         # Adapting dictionnary format to list of values
-        item = [clip[h] for h in tree_columns]
+        item = [clip[h] for h in pcolums]
 
         # Check we only have safe characters for Titles
         item[0] = ''.join(filter(lambda x: ord(x) < 65535, item[0]))
@@ -216,62 +208,93 @@ def display_results(presults, pstreamer_name):
             games[item[4]] = game_name
         item[4] = games[item[4]]
 
-        # Grab Thumbnail
-        # thumbnails.append(ImageTk.PhotoImage(generate_thumbnail(clip["thumbnail_url"])))
-        thumbnails.append(ImageTk.PhotoImage(generate_thumbnail_placeholder()))
-
-        tree_var.insert('',
-                        'end',
-                        image=thumbnails[-1],
-                        values=item,
-                        tags=("oddrow" if odd_row else "evenrow",))
+        ptree.insert('',
+                     'end',
+                     image=clip["thumbnail"],
+                     values=item,
+                     tags=("oddrow" if odd_row else "evenrow",))
         odd_row = not odd_row
 
-    # Adjust columns lenghts if necessary
-    for indx, val in enumerate(item):
-        ilen = tkinter.font.Font().measure(val)
-        if tree_var.column(tree_columns[indx],
-                           width=None) < ilen:
-            tree_var.column(tree_columns[indx],
-                            width=ilen)
+        # Adjust columns lengths if necessary
+        for indx, val in enumerate(item):
+            ilen = tkinter.font.Font().measure(val)
+            if ptree.column(pcolums[indx],
+                            width=None) < ilen:
+                ptree.column(pcolums[indx],
+                             width=ilen)
 
-    # Background 1/2 + Clickable links + Thumbnails display
-    tree_var.tag_configure("evenrow",
-                           background="lightblue",
-                           foreground="black")
-    tree_var.tag_configure("oddrow",
-                           background="white",
-                           foreground="black")
 
-    tree_var.bind("<Double-1>", open_clip)
-    # TODO ? child[5].configure(fg="blue",cursor="hand2")
-
-    # Scrollbars
-    vsb = tkinter.ttk.Scrollbar(res_window,
+def init_scrollbar(parent_window, ptree):
+    vsb = tkinter.ttk.Scrollbar(parent_window,
                                 orient="vertical",
-                                command=tree_var.yview)
-    hsb = tkinter.ttk.Scrollbar(res_window,
+                                command=ptree.yview)
+    hsb = tkinter.ttk.Scrollbar(parent_window,
                                 orient="horizontal",
-                                command=tree_var.xview)
-    tree_var.configure(yscrollcommand=vsb.set,
-                       xscrollcommand=hsb.set)
+                                command=ptree.xview)
+    ptree.configure(yscrollcommand=vsb.set,
+                    xscrollcommand=hsb.set)
 
     # Grid layout
-    tree_var.grid(column=0,
-                  row=0,
-                  sticky='nsew',
-                  in_=container)
+    ptree.grid(column=0,
+               row=0,
+               sticky='nsew',
+               in_=parent_window)
     vsb.grid(column=1,
              row=0,
              sticky='ns',
-             in_=container)
+             in_=parent_window)
     hsb.grid(column=0,
              row=1,
              sticky='ew',
-             in_=container)
+             in_=parent_window)
 
-    container.grid_columnconfigure(0, weight=1)
-    container.grid_rowconfigure(0, weight=1)
+
+def tree_binds(ptree):
+    ptree.tag_configure("evenrow",
+                        background="lightblue",
+                        foreground="black")
+    ptree.tag_configure("oddrow",
+                        background="white",
+                        foreground="black")
+
+    ptree.bind("<Double-1>", open_clip)
+
+
+def display_results(presults, pstreamer_name):
+    res_window = tkinter.Toplevel()
+    res_window.title("Liste des clips pour {} - Total clips : {}".format(pstreamer_name, len(presults)))
+    res_window.geometry("1300x600")
+
+    t = threading.Thread(target=download_thumbnails, args=(presults,))
+    t.start()
+
+    # Frame
+    tree_frame = tkinter.ttk.Frame(res_window)
+    tree_frame.pack(fill='both',
+                    expand=True)
+
+    tree_columns = ("title",
+                    "created_at",
+                    "creator_name",
+                    "view_count",
+                    "game_id",
+                    "url")
+
+    tree_var = init_tree(res_window, tree_columns)
+    build_tree(tree_var, tree_columns, presults)
+
+    # async load thumbnails
+    # pthumbnails.append(generate_thumbnail(clip["thumbnail_url"]))
+
+    # Background 1/2 + Clickable links + Thumbnails display
+    tree_binds(tree_var)
+    # TODO ? child[5].configure(fg="blue",cursor="hand2")
+
+    # Scrollbars
+    init_scrollbar(tree_frame, tree_var)
+
+    tree_frame.grid_columnconfigure(0, weight=1)
+    tree_frame.grid_rowconfigure(0, weight=1)
 
     res_window.mainloop()
 
@@ -303,6 +326,8 @@ def send_streamer_name(pstreamer_name_window, pbtn_var, pentry_var):
                                     message="Ce streamer n'a aucun clip dans sa collection...")
         return
     else:
+        for res in results:
+            res["thumbnail"] = generate_thumbnail_placeholder("grey")
         display_results(results, streamer_name)
 
 
