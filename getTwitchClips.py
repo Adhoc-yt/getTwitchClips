@@ -1,8 +1,6 @@
-# TODO Change cursor on hover links
-# TODO zoom thumbnail on hover
+# TODO Deliverable
+# TODO Tuto initialistion
 # TODO !!! barre de recherche
-# TODO resize columns
-# TODO Clip Downloader ?
 
 # Exit status 1: Error API Twitch
 # Exit status 2: auth.json does not exist
@@ -115,12 +113,6 @@ def sortby(tree, pcol, descending):
 
 def generate_thumbnail_placeholder(pcolor):
     return ImageTk.PhotoImage(Image.new("RGB", (142, 80), pcolor))
-
-
-def update_image(ptree, new_image):
-    children = ptree.get_children()
-    # for child in children:
-    #     ptree.item(item, text="blub", values=("foo", "bar"))
 
 
 def download_thumbnails(ptree, presults):
@@ -297,12 +289,7 @@ def display_results(presults, pstreamer_name):
                                                            presults))
     t.start()
 
-    # async load thumbnails
-    # pthumbnails.append(generate_thumbnail(clip["thumbnail_url"]))
-
-    # Background 1/2 + Clickable links + Thumbnails display
     tree_binds(tree_var)
-    # TODO ? child[5].configure(fg="blue",cursor="hand2")
 
     # Scrollbars
     init_scrollbar(tree_frame, tree_var)
