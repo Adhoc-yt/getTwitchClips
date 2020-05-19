@@ -225,7 +225,10 @@ def build_tree(ptree, pcolums, pcontent):
 
         # Adjust columns lengths if necessary
         for indx, val in enumerate(item):
-            ilen = tkinter.font.Font().measure(val)
+            try:
+                ilen = min(tkinter.font.Font().measure(val), 400)
+            except tkinter.TclError:
+                ilen = 200
             if ptree.column(pcolums[indx],
                             width=None) < ilen:
                 ptree.column(pcolums[indx],
