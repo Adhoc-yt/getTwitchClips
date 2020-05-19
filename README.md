@@ -11,7 +11,7 @@ _[> Rediffusions de live coding](https://twitch.tv/adhoc_yt)_
 ## Installation
 
 
-Téléchargez et exécutez [getTwitchClips.exe](getTwitchClips.exe)
+Téléchargez et exécutez [getTwitchClips.exe](https://github.com/Adhoc-yt/getTwitchClips/releases/download/v1.0/getTwitchClips.exe)
 
 ## Utilisation
 
