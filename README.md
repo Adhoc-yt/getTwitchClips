@@ -1,37 +1,37 @@
-# getTwitchClips 
-### A tool to get Twitch clips for a given user, and sort by name, date, views.
+Get Twitch Clips
+=========
 
-Live coding sessions in French on https://twitch.tv/adhoc_yt 
+Un utilitaire léger en Python pour retrouver tous les clips Twitch 
+d'un streamer, puis de trier par titre, par date, par nombre de vues,
+ _etc._
 
----
+_[> Rediffusions de live coding](https://twitch.tv/adhoc_yt)_
 
-#### Live of 5/8-9/2020 - Finalize OAuth + Table Display
 
-Script is now able to retrieve, display all clips, and sort by title/creator/game/etc.
+##Installation
 
-It is pretty close to a final version in terms of view.
 
-Loading of thumbnails is a pain point and it takes 4min+ to load all clips if 1000+ are found.
+Téléchargez et exécutez [getTwitchClips.exe](getTwitchClips.exe)
 
-Still a few things to do, ergonomy is janky as of now.
+##Utilisation
 
----
+Lancez l'exécutable :
 
-#### Live of 5/6/2020 - Added GUI + OAuth support
+![alt text](doc/2.png)
 
-Script is currently unusable without "auth.json", which contains client_id and client_secret, needed to generate OAuth tokens.
+Dans la fenêtre qui s'affiche, tapez le nom du streamer puis appuyez sur
+la touche Entrée ou cliquez sur le bouton OK. La collecte des clips va
+commencer, puis une nouvelle fenêtre va s'afficher :
 
-We get many more results much faster using the new Twitch API (800 req/min instead of 30).
+![alt text](doc/3.png)
 
-The GUI is simple but functional.
+Double-cliquer sur un clip l'ouvrira dans votre navigateur.
+Pour trier les clips, cliquez sur le critère de tri en haut de chaque
+ colonne; comme dans un tableau interactif classique.
 
----
-#### Live of 5/4/2020 - Script prompts for Twitch channel name, uses the API to retrieve collection of clips
+Vous pouvez lancer la recherche sur un autre streamer lorsqu'une collection
+ de clips a fini de charger.
 
-+main.py
+##Upcoming features
 
-We note that the results are not always accurate, and we tend to hit the 429 (too many requests) easily.
-
-Still a bit flimsy but usable to get a JSON list of all clips (if the streamer has a *REASONABLE* number of clips)
-
----
+Une barre de recherche et un panneau de login non-developpeur
