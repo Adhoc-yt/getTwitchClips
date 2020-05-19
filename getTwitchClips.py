@@ -184,7 +184,8 @@ def init_tree(parent_frame, pcolums):
     tree_var = tkinter.ttk.Treeview(parent_frame,
                                     columns=pcolums,
                                     selectmode="extended")
-    tree_var.heading("#0", text="", anchor='center')
+    tree_var.heading("#0", text='', anchor='center')
+    tree_var.column("#0", width=180, stretch=False)
     return tree_var
 
 
@@ -194,7 +195,9 @@ def build_tree(ptree, pcolums, pcontent):
                       text=col.title(),
                       command=lambda c=col: sortby(ptree, c, 0))
         ptree.column(col,
-                     width=tkinter.font.Font().measure(col.title()))
+                     width=tkinter.font.Font().measure(col.title()),
+                     stretch=False
+                     )
 
     odd_row = False
     games = {}
@@ -217,15 +220,15 @@ def build_tree(ptree, pcolums, pcontent):
                      iid=clip["url"],
                      image=clip["thumbnail"],
                      values=item,
-                     tags=("oddrow" if odd_row else "evenrow",))
+                     tags=("oddrow" if odd_row else "evenrow","clickable"))
         odd_row = not odd_row
 
         # Adjust columns lengths if necessary
         for indx, val in enumerate(item):
             try:
-                ilen = min(tkinter.font.Font().measure(val), 400)
+                ilen = min(tkinter.font.Font().measure(val), 300)
             except tkinter.TclError:
-                ilen = 200
+                ilen = 300
             if ptree.column(pcolums[indx],
                             width=None) < ilen:
                 ptree.column(pcolums[indx],
@@ -266,7 +269,7 @@ def tree_binds(ptree):
                         foreground="black")
 
     ptree.tag_bind("clickable",
-                   "<Double-1>",
+                   sequence="<Double-1>",
                    callback=open_clip)
 
 
