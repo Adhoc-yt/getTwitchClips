@@ -1,5 +1,4 @@
 # TODO bug if using '\' in streamer_name
-# TODO unbind touche entree
 # TODO bug si double clic sur en-tete (unbind categories)
 # TODO Change cursor on hover links
 # TODO zoom thumbnail on hover
@@ -325,6 +324,8 @@ def send_streamer_name(pstreamer_name_window, pbtn_var, pentry_var):
         return
 
     pbtn_var["state"] = "disabled"
+    pentry_var.unbind('<Return>')
+
     results = []
     for clips in get_clips(id_streamer):
         results.extend(clips)
@@ -332,6 +333,9 @@ def send_streamer_name(pstreamer_name_window, pbtn_var, pentry_var):
         pstreamer_name_window.update()
 
     pbtn_var["state"] = "normal"
+    pentry_var.bind('<Return>', lambda event: send_streamer_name(pstreamer_name_window,
+                                                                 pbtn_var,
+                                                                 pentry_var))
     pbtn_var["text"] = "OK"
     if len(results) == 0:
         tkinter.messagebox.showinfo(title="Rien de rien!",
